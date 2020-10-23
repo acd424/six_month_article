@@ -1,0 +1,157 @@
+---
+title: "National trends"
+output: html_notebook
+---
+
+
+
+```{r}
+
+library(tidyverse)
+library(readxl)
+library(gridExtra)
+library('dotwhisker')
+library(gam)
+library(FitAR)
+library(forecast)
+library(visdat)
+library(rgdal)
+library(tmap)
+library(grid)
+
+
+```
+
+historic data is pre-covid data
+```{r}
+setwd("~/Desktop/phd material/covid19/police_data")
+setwd("~/Desktop/crime_reports")
+load('historic_data.Rdata')
+load("crime.list.Rdata")
+load('april_data_all.RData')
+crime.list_no_ASB = crime.list[c(1:2,4:14)]
+
+
+date_files = list.files(recursive = TRUE)
+
+files_wanted = date_files[str_detect(date_files, "-street")]
+
+files_wanted_no_manchester = files_wanted[str_detect(files_wanted,"greater-manchester", negate = TRUE)]
+
+mar_2015_to_feb_2020 = list()
+counter = 1
+for(i in files_wanted_no_manchester ){
+  mar_2015_to_feb_2020[[counter]] = read.csv(file = i, stringsAsFactors = FALSE)
+  counter = counter +1
+}
+
+
+historic_data = bind_rows(mar_2015_to_feb_2020)
+
+
+save(historic_data, file = 'historic_data.Rdata')
+
+
+
+```
+get the post covid data - march
+```{r}
+
+setwd("~/Desktop/phd material/covid19/2020-03")
+March_files = list.files(recursive = TRUE)
+
+files_wanted_m = March_files[str_detect(March_files, "-street")]
+
+files_wanted_no_manchester_m = files_wanted_m[str_detect(files_wanted_m,"greater-manchester", negate = TRUE)]
+
+mar_2020 = list()
+counter = 1
+for(i in files_wanted_no_manchester_m ){
+  mar_2020[[counter]] = read.csv(file = i, stringsAsFactors = FALSE)
+  counter = counter +1
+}
+
+
+march_data_all = bind_rows(mar_2020)
+
+save(march_data_all, file = 'march_data_all.RData')
+```
+get the post covid data - april
+
+```{r}
+setwd("~/Desktop/phd material/covid19/2020-04")
+April_files = list.files(recursive = TRUE)
+
+files_wanted_a = April_files[str_detect(April_files, "-street")]
+
+files_wanted_no_manchester_a = files_wanted_a[str_detect(files_wanted_a,"greater-manchester", negate = TRUE)]
+
+apr_2020 = list()
+counter = 1
+for(i in files_wanted_no_manchester_a){
+  apr_2020[[counter]] = read.csv(file = i, stringsAsFactors = FALSE)
+  counter = counter +1
+}
+
+
+april_data_all = bind_rows(apr_2020)
+
+save(april_data_all, file = 'april_data_all.RData')
+
+```
+get August data
+```{r}
+setwd("~/Desktop/crime_reports/2020-08")
+aug_files = list.files(recursive = TRUE)
+
+files_wanted_aug = aug_files[str_detect(aug_files, "-street")]
+
+files_wanted_no_manchester_aug = files_wanted_aug[str_detect(files_wanted_aug,"greater-manchester", negate = TRUE)]
+
+aug_2020 = list()
+counter = 1
+for(i in files_wanted_no_manchester_aug){
+  aug_2020[[counter]] = read.csv(file = i, stringsAsFactors = FALSE)
+  counter = counter +1
+}
+
+
+aug_data_all = bind_rows(aug_2020)
+
+save(aug_data_all, file = 'aug_data_all.RData')
+```
+
+
+Get the pop data 
+```{r}
+pop_data  = read_excel('GMP_pop_ests.xlsx', sheet = 2)
+# spread data change over the 12 months
+# pop estimate is for june, need mar 15 onwards
+list_of_month_pops = list()
+counter = 1
+for( i in 5:10 ){
+  
+  x = data.frame(year = c(rep(pop_data$Year[i],6),rep(pop_data$Year[i+1],6)),
+                 month = c(6,7,8,9,10,11,12,1,2,3,4,5),
+                 pop = (seq(from = pop_data$`E_W_pop(GMP)`[i], to = pop_data$`E_W_pop(GMP)`[i+1], length.out = 13 )[1:12])/10000)
+  
+list_of_month_pops[[counter]] = x 
+counter = counter +1
+}
+
+
+pop_ests = bind_rows(list_of_month_pops)[10:72,] %>%
+  add_row(year = 2020, month = 6, pop = pop_data$`E_W_pop(GMP)`[11]/10000)
+
+monthly_increase_2020 = ((((pop_data$`E_W_pop(GMP)`[11]/10000 *pop_data$growth[10])) - pop_data$`E_W_pop(GMP)`[11]/10000)/12)
+
+pop_ests = pop_ests %>% add_row(year = 2020, month = 7, pop = pop_data$`E_W_pop(GMP)`[11]/10000 + monthly_increase_2020 )
+pop_ests = pop_ests %>% add_row(year = 2020, month = 8, pop = pop_data$`E_W_pop(GMP)`[11]/10000 + monthly_increase_2020 +monthly_increase_2020 )
+
+plot(pop_ests$pop)
+
+
+```
+
+
+
