@@ -43,13 +43,13 @@ ew_df <- uk_df %>%
 
 # Wide to long
 ew_long_df <- ew_df %>%
-  rename(retail = retail_and_recreation_percent_change_from_baseline,
-         grocery = grocery_and_pharmacy_percent_change_from_baseline,
-         parks = parks_percent_change_from_baseline,
-         transit = transit_stations_percent_change_from_baseline,
-         workplace = workplaces_percent_change_from_baseline,
-         residential = residential_percent_change_from_baseline) %>% 
-  select(sub_region_1, date, retail, grocery, parks, transit, workplace, residential) %>% 
+  rename(`Retail & recreation` = retail_and_recreation_percent_change_from_baseline,
+         `Grocery & pharmacy` = grocery_and_pharmacy_percent_change_from_baseline,
+         Parks = parks_percent_change_from_baseline,
+         `Transit stations` = transit_stations_percent_change_from_baseline,
+         Workplaces = workplaces_percent_change_from_baseline,
+         Residential = residential_percent_change_from_baseline) %>%
+  select(-country_region_code, -country_region, -sub_region_2, -metro_area:-census_fips_code) %>% 
   pivot_longer(cols = c(-date, -sub_region_1), names_to = "type", values_to = "perc") %>% 
   drop_na(perc) # !!!!!!!
 
@@ -97,6 +97,14 @@ ew_meanm_df <- ew_long_df %>%
 
 # Plot.
 p3 <- plot_fun(ew_meanm_df) +
+  geom_vline(xintercept = 2, linetype = "dashed") +
+  geom_vline(xintercept = 7, linetype = "dashed") +
+  annotate(geom = "curve", x = 4, xend = 2.1, y = 90, yend = 90, curvature = 0,
+           arrow = arrow(length = unit(1, "mm"))) +
+  annotate(geom = "curve", x = 5, xend = 6.9, y = 90, yend = 90, curvature = 0,
+           arrow = arrow(length = unit(1, "mm"))) +
+  geom_text(x = 4.5, y = 90, label = "Study period", size = 2) +
+  
   scale_x_discrete(labels = c("Feb", "Mar", "Apr", "May",
                               "Jun", "Jul", "Aug", "Sep",
                               "Oct")) +
