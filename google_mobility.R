@@ -17,18 +17,6 @@ table(mob_df$country_region)
 uk_df <- mob_df %>% 
   filter(country_region == "United Kingdom")
 
-# # Scottish regions from Wiki. First row is the URL.
-# scot_df <- read_csv("data/scotland_wiki.csv", skip = 1)
-# 
-# # Get names  N = 32
-# scots_names <- scot_df$`Council area`
-#   
-# # Clean names to get key words.
-# scots_names_cleaned <- str_replace_all(string = scots_names,
-#                pattern = " and |East |North |West |South | Isle | Isles | Island | Islands|City of | City| \\(Western Isles\\)",
-#                replacement = " ") %>% 
-#   trimws()
-
 # Identify Scotland subregions (read in manual list).
 scot_ni_df <- read_csv("data/scot_ni_subregions.csv", col_names = F)
 
@@ -151,86 +139,6 @@ p4 <- plot_fun(ew_summ_df) +
         legend.position = "bottom")
 
 ggsave(plot = p4, filename = "visuals/mobility_month_sum_ew.png", height = 10, width = 16, units = "cm")
-
-# Calculation using the % crime data.
-
-# Load results.
-arima_df <- read_csv("data/six_month_changes_new_model.csv")
-
-# Comparable mobility data.
-ew_meanm_clean_df <- ew_long_df %>% 
-  separate(col = date, into = c("year","month","day"), sep = "-") %>% 
-  group_by(month, type) %>% 
-  summarise(perc = mean(perc)) %>% 
-  ungroup() %>% 
-  filter(month != "02" & month != "09" & month != "10") %>% 
-  mutate(month = recode_factor(month,
-                              "03" = "Mar 20",
-                              "04" = "Apr 20",
-                              "05" = "May 20",
-                              "06" = "Jun 20",
-                              "07" = "Jul 20",
-                              "08" = "Aug 20")) %>% 
-  rename(Month = month)
-
-# Join. This repeats rows which are not all needed.
-mob_arima_joined_df <- left_join(arima_df, ew_meanm_clean_df)
-
-# Create MEC measure for every combination.
-mob_arima_hypo_df <- mob_arima_joined_df %>% 
-  rename(mob_change = perc,
-         crime_change = percent_change) %>% 
-  mutate(MEC = round(crime_change/mob_change, 2),
-         hypo = if_else(crime == "Burglary"                     & type == "Residential", "H1", "None"),
-         hypo = if_else(crime == "Shoplifting"                  & type == "Retail & recreation", "H2", hypo),
-         hypo = if_else(crime == "Other theft"                  & type == "Retail & recreation", "H3", hypo),
-         hypo = if_else(crime == "Theft from the person"        & type == "Retail & recreation", "H4a", hypo),
-         hypo = if_else(crime == "Theft from the person"        & type == "Transit stations", "H4b", hypo),
-         hypo = if_else(crime == "Robbery"                      & type == "Retail & recreation", "H5a", hypo),
-         hypo = if_else(crime == "Robbery"                      & type == "Workplaces", "H5b", hypo),
-         hypo = if_else(crime == "Violence and sexual offences" & type == "Retail & recreation", "H6", hypo),
-         hypo = if_else(crime == "Vehicle crime"                & type == "Residential", "H7", hypo),
-         Month = recode_factor(Month,
-                               "Mar 20" = "March",
-                               "Apr 20" = "April",
-                               "May 20" = "May",
-                               "Jun 20" = "June",
-                               "Jul 20" = "July",
-                               "Aug 20" = "August")) %>% 
-  filter(hypo != "None") %>% 
-  select(crime, Month, mob_change, crime_change, type, hypo, MEC) %>% 
-  arrange(hypo, Month)
-
-# Save.
-write_csv(x = mob_arima_hypo_df, path = "data/mec_results.csv")
-
-
-# Visualize.
-ggplot(data = mob_arima_hypo_df) +
-  theme_bw() +
-  geom_point(mapping = aes(x = Month, y = MEC, colour = hypo, group = crime), size = 4) +
-  geom_hline(yintercept = 0, linetype = "dotted")
-
-# Oxford data.
-oxford_df <- read_csv("data/gyration_percent_ccg.csv")
-
-oxford_long_df <- oxford_df %>% 
-  pivot_longer(cols = -date, names_to = "unit", values_to = "percent")
-
-oxford_long_df <- oxford_long_df %>% 
-  mutate(date_dmy = dmy(date))
-
-ggplot(data = oxford_long_df) +
-  geom_line(mapping = aes(x = date_dmy, y = percent, group = unit), alpha = 0.1) +
-  theme(legend.position = "none")
-
-
-
-
-
-
-
-
 
 
 

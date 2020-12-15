@@ -5,3 +5,4 @@
 !.gitignore
 !*.R
 !*.RMD
+!scot_ni_subregions.csv
